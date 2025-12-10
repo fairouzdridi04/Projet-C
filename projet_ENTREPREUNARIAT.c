@@ -167,7 +167,7 @@ void generer_facture(reservation *r) {
         return;
     }
     fprintf(f, "  -FACTURE-   \n");
-    fprintf(f, "Client : %s \n %s\n", r->client.nom, r->client.prenom);
+    fprintf(f, "Client : %s  %s\n", r->client.nom, r->client.prenom);
     fprintf(f, "Salle : %s\n", r->salle->nom);
     fprintf(f, "Date : %02d/%02d/%04d\n", r->date.jour, r->date.mois, r->date.annee);
     fprintf(f, "Montant total : %.2f DT\n", r->tarif);
@@ -459,3 +459,4 @@ int main() {
     return 0;
 
 }
+
