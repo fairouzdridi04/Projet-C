@@ -2,8 +2,6 @@
 #include<stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-
-
 typedef struct salle salle;
 struct salle {
     int idsalle;  
@@ -16,7 +14,6 @@ struct salle {
  bool verifcapacite(salle* s,int n){
     return n <= s->capacite; 
  }
-
 typedef struct date date;
 struct date {
     int jour;
@@ -25,7 +22,6 @@ struct date {
     char heure_debut[6];
     char heure_fin[6];
 };
-
 typedef struct client client ;
 struct client{
     int idclient;
@@ -37,7 +33,6 @@ struct client{
     int nbrinvite;
     date temp;
 };
-
 typedef struct reservation reservation;
 struct reservation{
     client client;
@@ -85,7 +80,6 @@ int reservation_chevauche(int id_salle,date d) {
 int reservconfirmation(date d,salle *s,int nbrinvite){
     return verifcapacite(s,nbrinvite)&&(!(reservation_chevauche(s->idsalle ,d)));
 }
-void generer_facture(reservation *r);
 void ajouter_reservation(client c, salle *s, date d, float tarif) {
     reservation *r = malloc(sizeof(reservation));
     r->client = c;
@@ -147,7 +141,7 @@ float calcul_total_simple(reservation *nouv) {
     int duree_m = duree % 60;
     float tarif = (nouv->salle->tarif_horaire * duree_h)
                 + ((nouv->salle->tarif_horaire / 60.0) * duree_m);
-    printf("Entrer le niveau d'equipement(1:standard ou 2;:premium) : ");
+    printf("Entrer le niveau d'equipement(1:standard ou 2:premium) :");
     scanf("%d", &nouv->salle->equipements);
     if (nouv->salle->equipements == 1)
         tarif += 10;
@@ -190,26 +184,41 @@ noeudStat* creerNoeud(int id, float ca) {
     n->gauche = n->droite = NULL;
     return n;
 }
-noeudStat* insererStat(noeudStat *r, int id, float ca) {
-    if (!r) return creerNoeud(id, ca);
+noeudStat* insererStat(noeudStat* r, int idsalle, float tarif) {
+    if (!r) {
+        r = malloc(sizeof(noeudStat));
+        r->idsalle = idsalle;
+        r->chiffre_affaire = tarif;
+        r->nb_reservations = 1;
+        r->gauche = r->droite = NULL;
+        return r;
+    }
+    if (idsalle < r->idsalle)
+        r->gauche = insererStat(r->gauche, idsalle, tarif);
 
-    if (id == r->idsalle) {
-        r->chiffre_affaire += ca;
+    else if (idsalle > r->idsalle)
+        r->droite = insererStat(r->droite, idsalle, tarif);
+
+    else {
+        r->chiffre_affaire += tarif;
         r->nb_reservations++;
     }
-    else if (id < r->idsalle)
-        r->gauche = insererStat(r->gauche, id, ca);
-    else
-        r->droite = insererStat(r->droite, id, ca);
-
     return r;
 }
+float total_CA = 0;
 void calculer_chiffre_affaire() {
     reservation *p = tete;
+    total_CA = 0;
     while (p) {
         racineStat = insererStat(racineStat, p->salle->idsalle, p->tarif);
+        total_CA += p->tarif;
         p = p->next;
     }
+}
+void afficher_total_CA() {
+    printf("\n-----------------------------------\n");
+    printf("Chiffre d'affaire TOTAL : %.2f DT\n", total_CA);
+    printf("-----------------------------------\n");
 }
 void afficher_stats_inorder(noeudStat *r) {
     if (!r) return;
@@ -222,7 +231,9 @@ int compteur_mois[13] = {0};
 void compter_reservations_par_mois() {
     reservation *p = tete;
     while (p) {
-        compteur_mois[p->date.mois]++;
+        if (strcmp(p->statut, "CONFIRMEE") == 0){
+            compteur_mois[p->date.mois]++;
+        }
         p = p->next;
     }
 }
@@ -343,6 +354,7 @@ int main() {
                 if (choixAdmin == 1) {
                     calculer_chiffre_affaire();
                     afficher_stats_inorder(racineStat);
+                    afficher_total_CA();
                     compter_reservations_par_mois();
                     afficher_reservations_par_mois();
                     printf("\n Salles les plus populaires :\n");
