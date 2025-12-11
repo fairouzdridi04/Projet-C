@@ -80,6 +80,7 @@ int reservation_chevauche(int id_salle,date d) {
 int reservconfirmation(date d,salle *s,int nbrinvite){
     return verifcapacite(s,nbrinvite)&&(!(reservation_chevauche(s->idsalle ,d)));
 }
+void generer_facture(reservation *r);
 void ajouter_reservation(client c, salle *s, date d, float tarif) {
     reservation *r = malloc(sizeof(reservation));
     r->client = c;
@@ -242,11 +243,26 @@ void afficher_reservations_par_mois() {
         printf("Mois %d : %d reservations\n", m, compteur_mois[m]);
     }
 }
-void afficher_salles_populaires(noeudStat *r) {
+void salle_max_CA(noeudStat *r, noeudStat **maxNoeud) {
     if (!r) return;
-    afficher_salles_populaires(r->droite);
-    printf("Salle %d -> %d reservations\n", r->idsalle, r->nb_reservations);
-    afficher_salles_populaires(r->gauche);
+    salle_max_CA(r->gauche, maxNoeud);
+    if (*maxNoeud == NULL || r->chiffre_affaire > (*maxNoeud)->chiffre_affaire) {
+        *maxNoeud = r;
+    }
+    salle_max_CA(r->droite, maxNoeud);
+}
+void afficher_salles_populaires() {
+    noeudStat *maxNoeud = NULL;
+    salle_max_CA(racineStat, &maxNoeud);
+    if (maxNoeud == NULL) {
+        printf("Aucune reservation pour calculer les statistiques.\n");
+        return;
+    }
+    printf("Salle %d : %.2f DT de chiffre d'affaire (%d reservations)\n",
+           maxNoeud->idsalle,
+           maxNoeud->chiffre_affaire,
+           maxNoeud->nb_reservations);
+    printf("--------------------------------\n");
 }
 void sauvegarder_reservations() {
     FILE *f = fopen("reservations.txt", "w");
@@ -358,7 +374,7 @@ int main() {
                     compter_reservations_par_mois();
                     afficher_reservations_par_mois();
                     printf("\n Salles les plus populaires :\n");
-                    afficher_salles_populaires(racineStat);
+                    afficher_salles_populaires();
                 }
                 else if (choixAdmin == 2) {
                     printf("\n   -LISTE D'ATTENTE-   \n");
